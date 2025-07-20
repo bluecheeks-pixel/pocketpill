@@ -9,6 +9,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from collections import Counter
 
+from openai import OpenAI
+
 st.set_page_config(layout="wide")
 
 st.markdown(
@@ -163,3 +165,32 @@ with col3:
             st.write(filtered_name[["substitute0"]].drop_duplicates().reset_index(drop=True).head())
 
 
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+st.title(""
+"Hi I'm MedBot")
+
+# Store chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "system", "content": "You are a helpful assistant."}
+    ]
+
+# Display previous messages
+for msg in st.session_state.messages[1:]:
+    st.chat_message(msg["role"]).markdown(msg["content"])
+
+# The  input
+if prompt := st.chat_input("Ask me anything..."):
+    st.chat_message("user").markdown(prompt)
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    with st.spinner("Thinking..."):
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",  
+            messages=st.session_state.messages,
+        )
+
+    reply = response.choices[0].message.content
+    st.chat_message("assistant").markdown(reply)
+    st.session_state.messages.append({"role": "assistant", "content": reply})
